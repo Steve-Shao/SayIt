@@ -6,20 +6,30 @@ from rich.table import Table
 
 from sayit import __version__
 from sayit.config import Config
+from sayit.logging import setup_logging, get_logger
 
 console = Console()
 
 
 @click.group()
 @click.version_option(version=__version__, prog_name="sayit")
-def main():
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose debug output")
+@click.pass_context
+def main(ctx, verbose):
     """SayIt - Local, privacy-focused voice-to-text."""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj["verbose"] = verbose
+    setup_logging(verbose=verbose)
 
 
 @main.command()
-def start():
+@click.pass_context
+def start(ctx):
     """Start the SayIt daemon."""
+    logger = get_logger()
+    logger.info("Starting SayIt daemon")
+    logger.debug("Verbose mode enabled" if ctx.obj.get("verbose") else "Normal mode")
+    
     console.print("[green]✓[/green] Starting SayIt daemon...")
     console.print("[dim]  (not implemented yet)[/dim]")
 
@@ -27,6 +37,9 @@ def start():
 @main.command()
 def stop():
     """Stop the SayIt daemon."""
+    logger = get_logger()
+    logger.info("Stopping SayIt daemon")
+    
     console.print("[yellow]■[/yellow] Stopping SayIt daemon...")
     console.print("[dim]  (not implemented yet)[/dim]")
 
@@ -34,6 +47,9 @@ def stop():
 @main.command()
 def status():
     """Check if SayIt daemon is running."""
+    logger = get_logger()
+    logger.debug("Checking daemon status")
+    
     console.print("[blue]ℹ[/blue] Checking SayIt status...")
     console.print("[dim]  (not implemented yet)[/dim]")
 
