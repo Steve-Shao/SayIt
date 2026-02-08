@@ -21,33 +21,11 @@ WRITING_PREFERENCES:
 
 # Roadmap: SayIt
 
-**Current Status:** Phase 4 (Local Testing and Polishing)
+**Current Status:** Phase 4 (Local Testing and FunASR Integration)
 
 ---
 
-## Phase 8: Cross-Platform Support
-
-**Goal:** Extend SayIt beyond macOS.
-
-- [ ] Linux support (xdotool for text injection)
-- [ ] Platform detection and conditional loading
-- [ ] faster-whisper as default engine for Linux
-- [ ] Test on Ubuntu/Debian
-
----
-
-## Phase 7: Additional Engines
-
-**Goal:** Support alternative transcription backends.
-
-- [ ] faster-whisper engine (cross-platform, CPU)
-- [ ] SenseVoice engine (Chinese-optimized)
-- [ ] Engine switching via config (`sayit config set engine <name>`)
-- [ ] `sayit engines` command to list available engines
-
----
-
-## Phase 6: Initial Publication
+## Phase 7: Initial Publication
 
 **Goal:** Make SayIt publicly available and discoverable.
 
@@ -58,27 +36,41 @@ WRITING_PREFERENCES:
 
 ---
 
-## Phase 5: Packaging and Installation Testing
+## Phase 6: macOS App Packaging
 
-**Goal:** Make installation simple and reliable for end users.
+**Goal:** Package SayIt as a native macOS application.
 
-- [ ] Simplify dependency installation
-- [ ] Test fresh install on clean macOS system
-- [ ] Write clear installation guide
-- [ ] Consider PyPI publication (`pip install sayit`)
-- [ ] Test installation from PyPI
+- [ ] PyInstaller setup for .app bundle
+- [ ] Settings UI (hotkey, language selection)
+- [ ] Test on clean macOS system
+- [ ] Code signing and notarization
+- [ ] DMG installer
 
 ---
 
-## Phase 4: Local Testing and Polishing ← Current
+## Phase 5: Additional Models via FunASR
 
-**Goal:** Refine the user experience through daily use.
+**Goal:** Support alternative speech recognition models through FunASR.
 
+- [ ] Test Paraformer (Chinese-optimized)
+- [ ] Test Whisper via FunASR
+- [ ] Test Qwen-Audio
+- [ ] Model switching via config
+- [ ] Document model comparison (accuracy, speed, languages)
+
+---
+
+## Phase 4: Local Testing and FunASR Integration ← Current
+
+**Goal:** Refine user experience and establish FunASR as the unified framework.
+
+- [x] FunASR as unified inference framework
+- [x] SenseVoice as default model (excellent Chinese-English mixed recognition)
+- [x] Simplified codebase (removed multi-engine abstraction)
 - [ ] Use SayIt daily as primary voice input tool
 - [ ] Document bugs and friction points
 - [ ] Fix critical issues
 - [ ] Optimize transcription latency
-- [ ] Improve error handling and user feedback
 
 ---
 
@@ -86,7 +78,6 @@ WRITING_PREFERENCES:
 
 **Completed:** End-to-end voice input working.
 
-- [x] MLX Whisper engine integration
 - [x] Text injection via clipboard + paste
 - [x] Focus restoration after indicator shows
 - [x] Support for Chinese, English, Japanese

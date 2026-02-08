@@ -2,12 +2,16 @@ name: sayit
 channels:
   - defaults
   - conda-forge
+  - pytorch
 dependencies:
   - python=3.12
   - pip
+  - pytorch>=2.0
+  - torchaudio>=2.0
   - pip:
     - click>=8.0
     - rich>=13.0
     - pynput>=1.7
     - sounddevice>=0.4
     - numpy>=1.26
+    - funasr>=1.0

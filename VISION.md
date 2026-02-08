@@ -40,7 +40,9 @@ Speech-to-text is now a commodity capability. Charging $12/month for what your l
 
 ## What SayIt Is
 
-A local, open-source voice input tool for macOS. Hold a key, speak, release—text appears at your cursor. No cloud. No subscription. No data leaves your machine.
+A local, open-source voice input app for macOS. Hold a key, speak, release—text appears at your cursor. No cloud. No subscription. No data leaves your machine.
+
+Packaged as a native macOS application for end users, with an optional CLI for developers.
 
 ## What SayIt Is Not
 

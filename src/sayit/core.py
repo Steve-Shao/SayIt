@@ -2,13 +2,12 @@
 
 import queue
 import signal
-import sys
 import threading
 import tkinter as tk
 from typing import Optional
 
 from sayit.config import Config
-from sayit.engines.base import get_engine, TranscriptionEngine
+from sayit.transcriber import Transcriber
 from sayit.hotkey import HotkeyListener
 from sayit.indicator import StatusIndicator
 from sayit.injector import TextInjector
@@ -27,11 +26,7 @@ class SayItCore:
     """
     
     def __init__(self, config: Optional[Config] = None):
-        """Initialize the core application.
-        
-        Args:
-            config: Configuration object. Loads from file if not provided.
-        """
+        """Initialize the core application."""
         self.config = config or Config.load()
         self.logger = get_logger()
         
@@ -41,7 +36,7 @@ class SayItCore:
         self._recorder: Optional[AudioRecorder] = None
         self._sounds: Optional[SoundPlayer] = None
         self._indicator: Optional[StatusIndicator] = None
-        self._engine: Optional[TranscriptionEngine] = None
+        self._transcriber: Optional[Transcriber] = None
         self._injector: Optional[TextInjector] = None
         
         # Thread-safe event queue
@@ -56,14 +51,14 @@ class SayItCore:
         """Initialize all components."""
         # Hidden tkinter root window
         self._root = tk.Tk()
-        self._root.withdraw()  # Hide the window
+        self._root.withdraw()
         
         # Prevent Dock icon on macOS
         try:
             self._root.tk.call('::tk::unsupported::MacWindowStyle', 'style', 
                               self._root._w, 'plain', 'none')
         except tk.TclError:
-            pass  # Not on macOS or unsupported
+            pass
         
         # Audio recorder
         self._recorder = AudioRecorder(
@@ -76,14 +71,9 @@ class SayItCore:
         # Status indicator
         self._indicator = StatusIndicator(self._root)
         
-        # Transcription engine
-        try:
-            self._engine = get_engine(self.config.engine)
-            self._engine.load_model(self.config.model)
-            self.logger.info(f"Engine loaded: {self.config.engine}")
-        except Exception as e:
-            self.logger.error(f"Failed to load engine: {e}")
-            self._engine = None
+        # Transcriber
+        self._transcriber = Transcriber()
+        self.logger.info("Transcriber initialized (SenseVoice)")
         
         # Text injector
         self._injector = TextInjector()
@@ -168,8 +158,8 @@ class SayItCore:
     
     def _transcribe_and_inject(self, audio_path: str) -> None:
         """Transcribe audio and inject text (runs transcription in background)."""
-        if self._engine is None:
-            self.logger.error("No transcription engine available")
+        if self._transcriber is None:
+            self.logger.error("Transcriber not available")
             if self._indicator:
                 self._indicator.hide()
             return
@@ -187,7 +177,7 @@ class SayItCore:
         def transcribe_task():
             try:
                 self.logger.debug(f"Transcribing: {audio_path}")
-                text = self._engine.transcribe(audio_path, language=self.config.language)
+                text = self._transcriber.transcribe(audio_path, language=self.config.language)
                 text = text.strip()
                 
                 if text:

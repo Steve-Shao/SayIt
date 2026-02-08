@@ -32,7 +32,7 @@ Technical decisions, architecture notes, and implementation details.
 | SayItCore | Main application class. Manages event loop and coordinates all components. |
 | HotkeyListener | Monitors global keyboard events for the configured trigger key. |
 | AudioRecorder | Captures microphone input during recording sessions. |
-| TranscriptionEngine | Converts audio to text using local models. Abstract base with pluggable backends. |
+| Transcriber | Converts audio to text using FunASR framework with SenseVoice model. |
 | TextInjector | Simulates keyboard input to insert text at cursor position. |
 | StatusIndicator | Floating window showing recording/processing state. |
 | SoundPlayer | Plays audio feedback for state transitions. |
@@ -58,7 +58,7 @@ The `root.after()` mechanism schedules GUI operations from background threads sa
 2. HotkeyListener.on_press() → start recording, show indicator, play sound
 3. User releases hotkey
 4. HotkeyListener.on_release() → stop recording, hide indicator, play sound
-5. TranscriptionEngine.transcribe(audio_path)
+5. Transcriber.transcribe(audio_path)
 6. TextInjector.inject(text)
 ```
 
@@ -76,9 +76,8 @@ src/sayit/
 ├── indicator.py     # Status window
 ├── config.py        # Configuration
 ├── sounds.py        # Audio feedback
-└── engines/
-    ├── base.py          # Abstract base
-    └── mlx_whisper.py   # macOS default engine
+├── transcriber.py   # Speech-to-text (FunASR/SenseVoice)
+└── logging.py       # Logging setup
 ```
 
 ---
@@ -89,7 +88,7 @@ src/sayit/
 
 **Daemon Process:** Uses `subprocess.Popen` instead of `os.fork()`. Fork causes tkinter to fail on macOS because GUI must initialize in the main process.
 
-**Model Path:** Must use full HuggingFace path (`mlx-community/whisper-large-v3-turbo`), not short names.
+**FunASR Framework:** Unified inference framework supporting multiple models. Currently uses SenseVoice for excellent Chinese-English mixed recognition.
 
 ---
 
@@ -100,7 +99,7 @@ src/sayit/
 | Config | `~/.config/sayit/config.json` |
 | Logs | `~/.config/sayit/logs/sayit.log` |
 | PID | `~/.config/sayit/sayit.pid` |
-| Models | `~/.cache/huggingface/` (managed by engine libraries) |
+| Models | `~/.cache/modelscope/hub/` (managed by FunASR) |
 
 ---
 
@@ -132,7 +131,8 @@ sayit stop
 | rich | CLI formatting |
 | pynput | Global hotkey |
 | sounddevice | Audio recording |
-| mlx-whisper | Transcription (macOS) |
+| funasr | Speech recognition framework |
+| torch | PyTorch backend for FunASR |
 | tkinter | Status indicator (built-in) |
 
 ---
@@ -157,13 +157,13 @@ The Fn key cannot be detected by pynput on macOS.
 ```json
 {
   "hotkey": "alt_r",
-  "engine": "mlx-whisper",
-  "model": "mlx-community/whisper-large-v3-turbo",
   "language": "auto",
   "sounds_enabled": true,
   "min_recording_duration": 0.3
 }
 ```
+
+Supported languages: `auto`, `zh`, `en`, `ja`, `ko`, `yue` (Cantonese).
 
 ---
 

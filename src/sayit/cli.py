@@ -34,7 +34,6 @@ def main(ctx, verbose):
 @click.pass_context
 def start(ctx):
     """Start the SayIt daemon."""
-    logger = get_logger()
     daemon = Daemon()
     
     running, pid = daemon.is_running()
@@ -44,12 +43,10 @@ def start(ctx):
     
     console.print("[green]✓[/green] Starting SayIt daemon...")
     cfg = Config.load()
-    console.print(f"  Engine: {cfg.engine}")
-    console.print(f"  Model: {cfg.model}")
     console.print(f"  Hotkey: {cfg.hotkey}")
+    console.print(f"  Language: {cfg.language}")
     
     if daemon.start(_daemon_main_loop):
-        # Parent process returns here
         running, pid = daemon.is_running()
         if running:
             console.print(f"  PID: {pid}")
@@ -118,7 +115,7 @@ def config_set(key: str, value: str):
     # Validate key exists
     if not hasattr(cfg, key):
         console.print(f"[red]✗[/red] Unknown setting: {key}")
-        console.print(f"[dim]  Valid settings: hotkey, engine, model, language, sounds_enabled, min_recording_duration[/dim]")
+        console.print(f"[dim]  Valid settings: hotkey, language, sounds_enabled, min_recording_duration[/dim]")
         return
     
     # Validate hotkey value
@@ -126,6 +123,14 @@ def config_set(key: str, value: str):
         if not HotkeyListener.is_valid_key(value):
             console.print(f"[red]✗[/red] Unsupported hotkey: {value}")
             console.print(f"[dim]  Supported keys: {', '.join(HotkeyListener.get_supported_keys())}[/dim]")
+            return
+    
+    # Validate language value
+    if key == "language":
+        valid_langs = ["auto", "zh", "en", "ja", "ko", "yue"]
+        if value not in valid_langs:
+            console.print(f"[red]✗[/red] Unsupported language: {value}")
+            console.print(f"[dim]  Valid languages: {', '.join(valid_langs)}[/dim]")
             return
     
     # Convert value to appropriate type

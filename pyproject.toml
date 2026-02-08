@@ -4,22 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sayit"
-version = "0.3.0"
-description = "Local, privacy-focused voice-to-text for macOS and Linux"
+version = "0.4.0"
+description = "Local voice-to-text for macOS. Hold a key, speak, release—text appears at cursor."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12"
 authors = [
     {name = "Steve Shao"}
 ]
-keywords = ["voice", "speech-to-text", "whisper", "dictation", "accessibility"]
+keywords = ["voice", "speech-to-text", "sensevoice", "dictation", "accessibility", "macos"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
-    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
-    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
@@ -30,24 +29,15 @@ dependencies = [
     "pynput>=1.7",
     "sounddevice>=0.4",
     "numpy>=1.26",
+    "funasr>=1.0",
+    "torch>=2.0",
+    "torchaudio>=2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
-]
-mlx = [
-    "mlx-whisper>=0.4",
-]
-faster = [
-    "faster-whisper>=1.0",
-]
-sensevoice = [
-    "funasr>=1.0",
-]
-all = [
-    "sayit[mlx,faster,sensevoice]",
 ]
 
 [project.scripts]

@@ -33,14 +33,14 @@ See [VISION.md](VISION.md) for the full rationale.
 
 ## Installation
 
-**Requirements:** macOS 12+, Apple Silicon, Python 3.12+, ffmpeg
+**Requirements:** macOS 12+, Apple Silicon, Python 3.12+
 
 ```bash
-# Install ffmpeg (if not already)
-brew install ffmpeg
-
-# Install SayIt
+# Install SayIt with dependencies
 pip install sayit
+
+# First run will download the speech model (~900MB)
+sayit start
 ```
 
 Or from source:
@@ -98,8 +98,4 @@ SayIt uses a spec-driven development process:
 
 To contribute or extend SayIt, start with [DEVELOPER.md](DEVELOPER.md) for architecture overview, then check [ROADMAP.md](ROADMAP.md) for current priorities.
 
----
-
-## License
-
-MIT
+-

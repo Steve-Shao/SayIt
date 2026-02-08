@@ -27,10 +27,27 @@ Tracking bugs, friction points, and improvements discovered during daily use.
 
 ## Open
 
-_No open issues yet._
+### 1. Silent failure when model unavailable
+
+**Problem:** When the model fails to download or load, transcription silently fails. The status indicator keeps spinning with no error feedback.
+
+**Root cause:** Transcription runs in a background thread. Failures are logged but not surfaced to the user.
+
+**Suggested fix:**
+- Show error indicator when transcription fails
+- Add startup check for model availability
+- Add timeout mechanism (e.g., 30s) with user notification
 
 ---
 
 ## Resolved
 
-_No resolved issues yet._
+### ~~2. Chinese text uses English punctuation~~ ✓
+
+**Resolved:** Switched to SenseVoice engine which handles Chinese punctuation correctly.
+
+---
+
+### ~~3. Mixed Chinese-English transcription quality~~ ✓
+
+**Resolved:** SenseVoice provides excellent mixed Chinese-English recognition out of the box. No special configuration needed.

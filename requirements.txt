@@ -5,6 +5,7 @@ pynput>=1.7
 sounddevice>=0.4
 numpy>=1.26
 
-# Development (optional)
-# pytest>=7.0
-# pytest-cov>=4.0
+# Speech recognition (SenseVoice)
+funasr>=1.0
+torch>=2.0
+torchaudio>=2.0

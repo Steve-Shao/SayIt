@@ -1,9 +1,8 @@
 """SayIt configuration management."""
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Optional
 
 
 CONFIG_DIR = Path.home() / ".config" / "sayit"
@@ -15,22 +14,13 @@ class Config:
     """SayIt configuration."""
     
     hotkey: str = "alt_r"  # Default: Right Option key
-    engine: str = "mlx-whisper"
-    model: str = "distil-large-v3"
-    language: str = "auto"
+    language: str = "auto"  # "auto", "zh", "en", "ja", "ko", "yue"
     sounds_enabled: bool = True
     min_recording_duration: float = 0.3
     
     @staticmethod
     def is_valid_hotkey(key: str) -> bool:
-        """Check if hotkey is supported.
-        
-        Args:
-            key: Hotkey name to validate.
-            
-        Returns:
-            True if hotkey is supported, False otherwise.
-        """
+        """Check if hotkey is supported."""
         from sayit.hotkey import HotkeyListener
         return HotkeyListener.is_valid_key(key)
     
@@ -41,9 +31,11 @@ class Config:
             try:
                 with open(CONFIG_FILE, "r") as f:
                     data = json.load(f)
-                return cls(**data)
+                # Filter out old config keys that no longer exist
+                valid_keys = {f.name for f in cls.__dataclass_fields__.values()}
+                filtered = {k: v for k, v in data.items() if k in valid_keys}
+                return cls(**filtered)
             except (json.JSONDecodeError, TypeError):
-                # Invalid config, return default
                 return cls()
         return cls()
     
