@@ -8,3 +8,4 @@ dependencies:
   - pip:
     - click>=8.0
     - rich>=13.0
+    - pynput>=1.7
