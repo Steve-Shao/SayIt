@@ -1,14 +1,26 @@
 """SayIt CLI entry point."""
 
+import time
 import click
 from rich.console import Console
 from rich.table import Table
 
 from sayit import __version__
 from sayit.config import Config
+from sayit.daemon import Daemon
 from sayit.logging import setup_logging, get_logger
 
 console = Console()
+
+
+def _daemon_main_loop():
+    """Main loop for the daemon process (placeholder)."""
+    logger = get_logger()
+    logger.info("Daemon main loop started")
+    
+    # Placeholder: just sleep until terminated
+    while True:
+        time.sleep(1)
 
 
 @click.group()
@@ -27,31 +39,53 @@ def main(ctx, verbose):
 def start(ctx):
     """Start the SayIt daemon."""
     logger = get_logger()
-    logger.info("Starting SayIt daemon")
-    logger.debug("Verbose mode enabled" if ctx.obj.get("verbose") else "Normal mode")
+    daemon = Daemon()
+    
+    running, pid = daemon.is_running()
+    if running:
+        console.print(f"[yellow]![/yellow] Daemon already running (PID: {pid})")
+        return
     
     console.print("[green]✓[/green] Starting SayIt daemon...")
-    console.print("[dim]  (not implemented yet)[/dim]")
+    cfg = Config.load()
+    console.print(f"  Engine: {cfg.engine}")
+    console.print(f"  Model: {cfg.model}")
+    console.print(f"  Hotkey: {cfg.hotkey}")
+    
+    if daemon.start(_daemon_main_loop):
+        # Parent process returns here
+        running, pid = daemon.is_running()
+        if running:
+            console.print(f"  PID: {pid}")
 
 
 @main.command()
 def stop():
     """Stop the SayIt daemon."""
-    logger = get_logger()
-    logger.info("Stopping SayIt daemon")
+    daemon = Daemon()
     
-    console.print("[yellow]■[/yellow] Stopping SayIt daemon...")
-    console.print("[dim]  (not implemented yet)[/dim]")
+    running, pid = daemon.is_running()
+    if not running:
+        console.print("[yellow]![/yellow] Daemon is not running")
+        return
+    
+    console.print(f"[yellow]■[/yellow] Stopping SayIt daemon (PID: {pid})...")
+    if daemon.stop():
+        console.print("[green]✓[/green] Daemon stopped")
+    else:
+        console.print("[red]✗[/red] Failed to stop daemon")
 
 
 @main.command()
 def status():
     """Check if SayIt daemon is running."""
-    logger = get_logger()
-    logger.debug("Checking daemon status")
+    daemon = Daemon()
     
-    console.print("[blue]ℹ[/blue] Checking SayIt status...")
-    console.print("[dim]  (not implemented yet)[/dim]")
+    running, pid = daemon.is_running()
+    if running:
+        console.print(f"[green]●[/green] SayIt daemon is running (PID: {pid})")
+    else:
+        console.print("[dim]○[/dim] SayIt daemon is not running")
 
 
 @main.group(invoke_without_command=True)
