@@ -1,5 +1,6 @@
 """SayIt core event loop with tkinter mainloop and hotkey integration."""
 
+import queue
 import signal
 import sys
 import tkinter as tk
@@ -18,7 +19,7 @@ class SayItCore:
     Threading model:
     - Main thread: tkinter mainloop (required for GUI on macOS)
     - Background thread: hotkey listener (pynput)
-    - Communication: root.after() for thread-safe GUI updates
+    - Communication: thread-safe queue + tkinter after() polling
     """
     
     def __init__(self, config: Optional[Config] = None):
@@ -36,6 +37,9 @@ class SayItCore:
         self._recorder: Optional[AudioRecorder] = None
         self._sounds: Optional[SoundPlayer] = None
         
+        # Thread-safe event queue
+        self._event_queue: queue.Queue = queue.Queue()
+        
         # State
         self._running = False
         self._last_audio_path: Optional[str] = None
@@ -45,6 +49,13 @@ class SayItCore:
         # Hidden tkinter root window
         self._root = tk.Tk()
         self._root.withdraw()  # Hide the window
+        
+        # Prevent Dock icon on macOS
+        try:
+            self._root.tk.call('::tk::unsupported::MacWindowStyle', 'style', 
+                              self._root._w, 'plain', 'none')
+        except tk.TclError:
+            pass  # Not on macOS or unsupported
         
         # Audio recorder
         self._recorder = AudioRecorder(
@@ -63,21 +74,34 @@ class SayItCore:
     
     def _on_hotkey_press(self) -> None:
         """Handle hotkey press event (called from background thread)."""
-        if self._root is None:
-            return
-        # Schedule on main thread
-        self._root.after(0, self._start_recording)
+        self.logger.debug("Hotkey press callback triggered")
+        self._event_queue.put("press")
     
     def _on_hotkey_release(self) -> None:
         """Handle hotkey release event (called from background thread)."""
-        if self._root is None:
-            return
-        # Schedule on main thread
-        self._root.after(0, self._stop_recording)
+        self.logger.debug("Hotkey release callback triggered")
+        self._event_queue.put("release")
+    
+    def _process_events(self) -> None:
+        """Process events from queue (runs on main thread)."""
+        try:
+            while True:
+                event = self._event_queue.get_nowait()
+                if event == "press":
+                    self._start_recording()
+                elif event == "release":
+                    self._stop_recording()
+        except queue.Empty:
+            pass
+        
+        # Schedule next check
+        if self._running and self._root:
+            self._root.after(10, self._process_events)
     
     def _start_recording(self) -> None:
         """Start recording (runs on main thread)."""
         if self._recorder is None or self._sounds is None:
+            self.logger.warning("Recorder or sounds not initialized")
             return
         
         self.logger.info("Recording started")
@@ -87,6 +111,7 @@ class SayItCore:
     def _stop_recording(self) -> None:
         """Stop recording and process audio (runs on main thread)."""
         if self._recorder is None or self._sounds is None:
+            self.logger.warning("Recorder or sounds not initialized")
             return
         
         audio_path = self._recorder.stop_recording()
@@ -131,6 +156,10 @@ class SayItCore:
             f"SayIt started (hotkey: {self.config.hotkey}, "
             f"sounds: {'on' if self.config.sounds_enabled else 'off'})"
         )
+        
+        # Start event processing loop
+        if self._root:
+            self._root.after(10, self._process_events)
         
         # Run tkinter mainloop on main thread
         try:
