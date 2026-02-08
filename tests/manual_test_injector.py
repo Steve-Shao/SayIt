@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manual test for text injector.
+"""Manual test for text injector (clipboard + paste method).
 
 Usage:
     1. Open a text editor (TextEdit, VS Code, etc.)
@@ -7,11 +7,6 @@ Usage:
     3. Run this script: python tests/manual_test_injector.py
     4. You have 3 seconds to switch to the text editor
     5. Text should appear at cursor position
-
-Test cases:
-    - ASCII: "Hello World"
-    - Unicode: "你好世界"
-    - Special chars: 'say "hello"'
 """
 
 import time
@@ -21,7 +16,6 @@ from sayit.injector import TextInjector
 def main():
     injector = TextInjector()
     
-    # Check accessibility first
     print("Checking accessibility permissions...")
     if not injector.check_accessibility():
         print("⚠️  Accessibility permission may not be granted.")
@@ -33,7 +27,7 @@ def main():
     
     print()
     print("=" * 50)
-    print("MANUAL TEST: Text Injection")
+    print("MANUAL TEST: Text Injection (Clipboard + Paste)")
     print("=" * 50)
     print()
     print("1. Open a text editor (TextEdit, Notes, VS Code)")
@@ -53,35 +47,36 @@ def main():
     test_text = "Hello from SayIt! "
     print(f"\nInjecting: '{test_text}'")
     result = injector.inject(test_text)
-    print(f"Result: {'✓ Success' if result else '✗ Fell back to clipboard'}")
+    print(f"Result: {'✓ Success' if result else '✗ Failed'}")
+    if not result:
+        print(f"  Error: {injector.last_error}")
     
-    time.sleep(0.5)
+    time.sleep(0.3)
     
     # Test 2: Unicode (Chinese)
     test_text = "你好世界 "
     print(f"\nInjecting: '{test_text}'")
     result = injector.inject(test_text)
-    print(f"Result: {'✓ Success' if result else '✗ Fell back to clipboard'}")
+    print(f"Result: {'✓ Success' if result else '✗ Failed'}")
+    if not result:
+        print(f"  Error: {injector.last_error}")
     
-    time.sleep(0.5)
+    time.sleep(0.3)
     
     # Test 3: Special characters
-    test_text = '"quoted text" '
+    test_text = '"quoted" & <special> '
     print(f"\nInjecting: '{test_text}'")
     result = injector.inject(test_text)
-    print(f"Result: {'✓ Success' if result else '✗ Fell back to clipboard'}")
+    print(f"Result: {'✓ Success' if result else '✗ Failed'}")
+    if not result:
+        print(f"  Error: {injector.last_error}")
     
     print()
     print("=" * 50)
     print("Test complete!")
     print()
     print("Expected text in editor:")
-    print('  Hello from SayIt! 你好世界 "quoted text" ')
-    print()
-    print("If text didn't appear, check:")
-    print("  1. Accessibility permissions")
-    print("  2. Cursor was in a text field")
-    print("  3. Check clipboard (Cmd+V) for fallback")
+    print('  Hello from SayIt! 你好世界 "quoted" & <special> ')
 
 
 if __name__ == "__main__":

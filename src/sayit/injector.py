@@ -9,51 +9,69 @@ logger = logging.getLogger(__name__)
 class TextInjector:
     """Injects text at the current cursor position.
     
-    On macOS, uses AppleScript via osascript to simulate keyboard input.
-    Falls back to clipboard if text injection fails.
+    On macOS, uses clipboard + Cmd+V paste for reliable Unicode support.
     """
 
     def __init__(self):
         self._last_error: str | None = None
 
     def inject(self, text: str) -> bool:
-        """Type text at current cursor position.
+        """Inject text at current cursor position via clipboard + paste.
         
         Args:
             text: Text to inject.
             
         Returns:
-            True if injection succeeded, False if fell back to clipboard.
+            True if injection succeeded, False otherwise.
         """
         if not text:
             logger.debug("Empty text, nothing to inject")
             return True
 
-        # Try keyboard simulation first
-        if self._inject_via_keystroke(text):
-            logger.debug(f"Injected {len(text)} chars via keystroke")
-            return True
+        # Copy to clipboard
+        if not self._copy_to_clipboard(text):
+            return False
 
-        # Fallback to clipboard
-        logger.warning("Keystroke injection failed, falling back to clipboard")
-        self._copy_to_clipboard(text)
-        return False
+        # Paste via Cmd+V
+        if not self._paste():
+            logger.warning("Paste failed, text remains in clipboard")
+            return False
 
-    def _inject_via_keystroke(self, text: str) -> bool:
-        """Inject text using AppleScript keystroke.
+        logger.debug(f"Injected {len(text)} chars via clipboard+paste")
+        return True
+
+    def _copy_to_clipboard(self, text: str) -> bool:
+        """Copy text to system clipboard.
         
         Args:
-            text: Text to type.
+            text: Text to copy.
             
         Returns:
             True if successful.
         """
-        # Escape special characters for AppleScript
-        escaped = self._escape_for_applescript(text)
+        try:
+            process = subprocess.Popen(
+                ["pbcopy"],
+                stdin=subprocess.PIPE,
+            )
+            process.communicate(input=text.encode("utf-8"))
+            if process.returncode != 0:
+                self._last_error = "pbcopy failed"
+                logger.error(self._last_error)
+                return False
+            return True
+        except Exception as e:
+            self._last_error = str(e)
+            logger.error(f"Clipboard copy failed: {e}")
+            return False
+
+    def _paste(self) -> bool:
+        """Simulate Cmd+V paste.
         
-        # AppleScript to type text
-        script = f'tell application "System Events" to keystroke "{escaped}"'
-        
+        Returns:
+            True if successful.
+        """
+        script = 'tell application "System Events" to keystroke "v" using command down'
         try:
             result = subprocess.run(
                 ["osascript", "-e", script],
@@ -63,7 +81,7 @@ class TextInjector:
             )
             if result.returncode != 0:
                 self._last_error = result.stderr.strip()
-                logger.error(f"osascript failed: {self._last_error}")
+                logger.error(f"Paste failed: {self._last_error}")
                 return False
             return True
         except subprocess.TimeoutExpired:
@@ -72,38 +90,8 @@ class TextInjector:
             return False
         except Exception as e:
             self._last_error = str(e)
-            logger.error(f"Injection error: {e}")
+            logger.error(f"Paste error: {e}")
             return False
-
-    def _escape_for_applescript(self, text: str) -> str:
-        """Escape text for use in AppleScript string.
-        
-        Args:
-            text: Raw text.
-            
-        Returns:
-            Escaped text safe for AppleScript.
-        """
-        # Escape backslashes first, then quotes
-        escaped = text.replace("\\", "\\\\")
-        escaped = escaped.replace('"', '\\"')
-        return escaped
-
-    def _copy_to_clipboard(self, text: str) -> None:
-        """Copy text to system clipboard.
-        
-        Args:
-            text: Text to copy.
-        """
-        try:
-            process = subprocess.Popen(
-                ["pbcopy"],
-                stdin=subprocess.PIPE,
-            )
-            process.communicate(input=text.encode("utf-8"))
-            logger.info("Text copied to clipboard")
-        except Exception as e:
-            logger.error(f"Clipboard copy failed: {e}")
 
     def check_accessibility(self) -> bool:
         """Check if accessibility permissions are granted.
@@ -111,11 +99,12 @@ class TextInjector:
         Returns:
             True if permissions appear to be granted.
         """
-        # Try a simple keystroke test
-        script = 'tell application "System Events" to keystroke ""'
+        script = 'tell application "System Events" to keystroke "v" using command down'
         try:
+            # Just check if osascript can run without error
+            # Note: This doesn't actually paste since we're just checking
             result = subprocess.run(
-                ["osascript", "-e", script],
+                ["osascript", "-e", 'tell application "System Events" to key code 9'],
                 capture_output=True,
                 text=True,
                 timeout=2,
