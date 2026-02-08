@@ -1,0 +1,7 @@
+# Core dependencies
+click>=8.0
+rich>=13.0
+
+# Development (optional)
+# pytest>=7.0
+# pytest-cov>=4.0
