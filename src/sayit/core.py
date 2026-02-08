@@ -3,12 +3,15 @@
 import queue
 import signal
 import sys
+import threading
 import tkinter as tk
 from typing import Optional
 
 from sayit.config import Config
+from sayit.engines.base import get_engine, TranscriptionEngine
 from sayit.hotkey import HotkeyListener
 from sayit.indicator import StatusIndicator
+from sayit.injector import TextInjector
 from sayit.logging import get_logger
 from sayit.recorder import AudioRecorder
 from sayit.sounds import SoundPlayer
@@ -38,12 +41,15 @@ class SayItCore:
         self._recorder: Optional[AudioRecorder] = None
         self._sounds: Optional[SoundPlayer] = None
         self._indicator: Optional[StatusIndicator] = None
+        self._engine: Optional[TranscriptionEngine] = None
+        self._injector: Optional[TextInjector] = None
         
         # Thread-safe event queue
         self._event_queue: queue.Queue = queue.Queue()
         
         # State
         self._running = False
+        self._transcribing = False
         self._last_audio_path: Optional[str] = None
     
     def _setup_components(self) -> None:
@@ -69,6 +75,18 @@ class SayItCore:
         
         # Status indicator
         self._indicator = StatusIndicator(self._root)
+        
+        # Transcription engine
+        try:
+            self._engine = get_engine(self.config.engine)
+            self._engine.load_model(self.config.model)
+            self.logger.info(f"Engine loaded: {self.config.engine}")
+        except Exception as e:
+            self.logger.error(f"Failed to load engine: {e}")
+            self._engine = None
+        
+        # Text injector
+        self._injector = TextInjector()
         
         # Hotkey listener with callbacks
         self._hotkey = HotkeyListener(
@@ -96,6 +114,17 @@ class SayItCore:
                     self._start_recording()
                 elif event == "release":
                     self._stop_recording()
+                elif isinstance(event, tuple):
+                    event_type, data = event
+                    if event_type == "inject":
+                        self._inject_text(data)
+                    elif event_type == "done":
+                        if self._indicator:
+                            self._indicator.hide()
+                    elif event_type == "error":
+                        self.logger.error(f"Event error: {data}")
+                        if self._indicator:
+                            self._indicator.hide()
         except queue.Empty:
             pass
         
@@ -123,19 +152,78 @@ class SayItCore:
             self.logger.warning("Recorder or sounds not initialized")
             return
         
-        # Hide indicator
-        if self._indicator:
-            self._indicator.hide()
-        
         audio_path = self._recorder.stop_recording()
         self._sounds.play_stop()
         
         if audio_path:
             self._last_audio_path = audio_path
             self.logger.info(f"Recording saved: {audio_path}")
-            # TODO: Phase 3 will add transcription here
+            # Start transcription in background thread
+            self._transcribe_and_inject(audio_path)
         else:
             self.logger.info("Recording discarded (too short)")
+            # Hide indicator since no transcription needed
+            if self._indicator:
+                self._indicator.hide()
+    
+    def _transcribe_and_inject(self, audio_path: str) -> None:
+        """Transcribe audio and inject text (runs transcription in background)."""
+        if self._engine is None:
+            self.logger.error("No transcription engine available")
+            if self._indicator:
+                self._indicator.hide()
+            return
+        
+        if self._transcribing:
+            self.logger.warning("Already transcribing, skipping")
+            return
+        
+        self._transcribing = True
+        
+        # Update indicator to show processing state
+        if self._indicator:
+            self._indicator.set_processing()
+        
+        def transcribe_task():
+            try:
+                self.logger.debug(f"Transcribing: {audio_path}")
+                text = self._engine.transcribe(audio_path, language=self.config.language)
+                text = text.strip()
+                
+                if text:
+                    self.logger.info(f"Transcribed: {text[:50]}..." if len(text) > 50 else f"Transcribed: {text}")
+                    # Schedule injection on main thread
+                    self._event_queue.put(("inject", text))
+                else:
+                    self.logger.info("Transcription returned empty text")
+                    self._event_queue.put(("done", None))
+            except Exception as e:
+                self.logger.error(f"Transcription failed: {e}")
+                self._event_queue.put(("error", str(e)))
+            finally:
+                self._transcribing = False
+        
+        # Run transcription in background thread
+        thread = threading.Thread(target=transcribe_task, daemon=True)
+        thread.start()
+    
+    def _inject_text(self, text: str) -> None:
+        """Inject transcribed text at cursor (runs on main thread)."""
+        self.logger.debug(f"_inject_text called with: {text[:30]}...")
+        
+        if self._injector is None:
+            self.logger.error("Text injector not available")
+            return
+        
+        success = self._injector.inject(text)
+        if success:
+            self.logger.info("Text injected successfully")
+        else:
+            self.logger.warning(f"Text injection failed: {self._injector.last_error}")
+        
+        # Hide indicator after injection
+        if self._indicator:
+            self._indicator.hide()
     
     def _setup_signal_handlers(self) -> None:
         """Setup signal handlers for graceful shutdown."""

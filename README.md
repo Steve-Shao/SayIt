@@ -1,17 +1,24 @@
 # SayIt
 
-Local, privacy-focused voice-to-text for macOS (and Linux).
+Local, privacy-focused voice-to-text for macOS.
 
 Hold a hotkey to record, release to transcribe locally, text appears at cursor.
 
 ## Features
 
 - System-wide hotkey activation (Right Option by default)
+- Local transcription using MLX Whisper (no cloud, no data sent anywhere)
 - Audio recording with sound feedback (start/stop sounds)
-- Visual status indicator (red circle with mic icon)
-- Local transcription (no cloud) - coming in Phase 3
-- Multiple engine support (MLX Whisper, faster-whisper, SenseVoice)
-- Cross-platform (macOS primary, Linux planned)
+- Visual status indicator (red → orange during transcription)
+- Automatic text injection at cursor position
+- Unicode support (Chinese, Japanese, etc.)
+
+## Requirements
+
+- macOS 12+ (Monterey or later)
+- Apple Silicon Mac (M1/M2/M3)
+- Python 3.12+
+- ffmpeg (`brew install ffmpeg`)
 
 ## Installation
 
@@ -27,64 +34,69 @@ cd sayit
 pip install -e .
 ```
 
-## Usage
+## Quick Start
 
 ```bash
 # Start the daemon
 sayit start
 
-# Check status
-sayit status
+# Hold Right Option key, speak, release
+# Text appears at your cursor!
 
-# Stop the daemon
+# Stop when done
 sayit stop
+```
 
-# View/modify configuration
-sayit config
-sayit config set hotkey ctrl_r
-sayit config reset
+## Usage
+
+```bash
+sayit start      # Start background daemon
+sayit stop       # Stop daemon
+sayit status     # Check if running
+sayit config     # View configuration
+sayit config set hotkey cmd_r    # Change hotkey
+sayit config set model mlx-community/whisper-large-v3-turbo
 ```
 
 ## Configuration
 
-Configuration is stored in `~/.config/sayit/config.json`.
+Stored in `~/.config/sayit/config.json`.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| hotkey | alt_r | Trigger key (Right Option). See supported keys below. |
+| hotkey | alt_r | Trigger key (Right Option) |
 | engine | mlx-whisper | Transcription engine |
-| model | distil-large-v3 | Model variant |
-| language | auto | Language preference |
+| model | mlx-community/whisper-large-v3-turbo | Whisper model |
+| language | auto | Language (auto, zh, en, ja) |
 | sounds_enabled | true | Audio feedback |
-| min_recording_duration | 0.3 | Minimum recording length (seconds) |
 
 ### Supported Hotkeys
 
 `alt_r`, `alt_l`, `ctrl_r`, `ctrl_l`, `cmd_r`, `cmd_l`, `shift_r`, `shift_l`, `f1`-`f12`
 
-Note: The Fn key is not supported (cannot be detected by pynput on macOS).
+## Permissions
+
+Grant these in System Settings → Privacy & Security:
+
+- **Accessibility**: Required for hotkey detection and text injection
+- **Microphone**: Required for audio recording
 
 ## Development
 
 ```bash
-# Create conda environment
 conda create -n sayit python=3.12
 conda activate sayit
-
-# Install in editable mode with dev dependencies
 pip install -e ".[dev]"
-
-# Run tests
-pytest -v
+pytest -v -m "not hardware"
 ```
 
 ## Project Status
 
-- [x] Phase 1: CLI Shell + Config
+- [x] Phase 1: CLI + Config
 - [x] Phase 2: Hotkey + Recording + Feedback
-- [ ] Phase 3: Transcription + Text Injection
-- [ ] Phase 4: Additional Engines
-- [ ] Phase 5: Cross-Platform Support
+- [x] Phase 3: Transcription + Text Injection
+- [ ] Phase 4: Additional Engines (faster-whisper, SenseVoice)
+- [ ] Phase 5: Linux Support
 
 ## License
 
