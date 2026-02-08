@@ -11,23 +11,17 @@ from pynput.keyboard import Key, KeyCode
 from sayit.logging import get_logger
 
 
-# Key name mapping for configuration
-KEY_MAP = {
-    "fn": None,  # Special handling for Fn key
-    "ctrl": Key.ctrl,
-    "ctrl_l": Key.ctrl_l,
+# Supported keys for hotkey configuration (macOS)
+# Note: Fn key is NOT supported - pynput cannot detect it on macOS
+SUPPORTED_KEYS = {
+    "alt_r": Key.alt_r,      # Default - Right Option
+    "alt_l": Key.alt_l,      # Left Option
     "ctrl_r": Key.ctrl_r,
-    "alt": Key.alt,
-    "alt_l": Key.alt_l,
-    "alt_r": Key.alt_r,
-    "option": Key.alt,  # macOS alias
-    "cmd": Key.cmd,
-    "cmd_l": Key.cmd_l,
+    "ctrl_l": Key.ctrl_l,
     "cmd_r": Key.cmd_r,
-    "command": Key.cmd,  # macOS alias
-    "shift": Key.shift,
-    "shift_l": Key.shift_l,
+    "cmd_l": Key.cmd_l,
     "shift_r": Key.shift_r,
+    "shift_l": Key.shift_l,
     "f1": Key.f1,
     "f2": Key.f2,
     "f3": Key.f3,
@@ -45,6 +39,27 @@ KEY_MAP = {
 
 class HotkeyListener:
     """Listens for global hotkey press/release events."""
+    
+    @staticmethod
+    def is_valid_key(key: str) -> bool:
+        """Check if key name is supported.
+        
+        Args:
+            key: Key name to validate.
+            
+        Returns:
+            True if key is supported, False otherwise.
+        """
+        return key.lower() in SUPPORTED_KEYS
+    
+    @staticmethod
+    def get_supported_keys() -> list[str]:
+        """Get list of supported key names.
+        
+        Returns:
+            List of supported key names.
+        """
+        return list(SUPPORTED_KEYS.keys())
     
     def __init__(
         self,
@@ -69,15 +84,21 @@ class HotkeyListener:
         self._target_key = self._resolve_key(self.key_name)
     
     def _resolve_key(self, key_name: str) -> Optional[Key | KeyCode]:
-        """Resolve key name to pynput Key object."""
-        if key_name in KEY_MAP:
-            return KEY_MAP[key_name]
+        """Resolve key name to pynput Key object.
         
-        # Single character key
-        if len(key_name) == 1:
-            return KeyCode.from_char(key_name)
+        Args:
+            key_name: Key name from configuration.
+            
+        Returns:
+            pynput Key object, or None if invalid.
+        """
+        if key_name in SUPPORTED_KEYS:
+            return SUPPORTED_KEYS[key_name]
         
-        self.logger.warning(f"Unknown key: {key_name}, defaulting to 'fn'")
+        self.logger.warning(
+            f"Unsupported key: {key_name}. "
+            f"Supported keys: {', '.join(self.get_supported_keys())}"
+        )
         return None
     
     def _on_press(self, key: Key | KeyCode | None) -> None:
@@ -109,10 +130,7 @@ class HotkeyListener:
     def _matches_key(self, key: Key | KeyCode | None) -> bool:
         """Check if the pressed key matches our target key."""
         if self._target_key is None:
-            # Fn key: pynput doesn't detect it directly on macOS
-            # We use a workaround: check for Key.fn if available
-            return hasattr(Key, 'fn') and key == Key.fn
-        
+            return False
         return key == self._target_key
     
     def start(self) -> bool:

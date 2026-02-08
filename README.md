@@ -39,7 +39,7 @@ sayit stop
 
 # View/modify configuration
 sayit config
-sayit config set hotkey ctrl
+sayit config set hotkey ctrl_r
 sayit config reset
 ```
 
@@ -49,12 +49,18 @@ Configuration is stored in `~/.config/sayit/config.json`.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| hotkey | fn | Trigger key for recording |
+| hotkey | alt_r | Trigger key (Right Option). See supported keys below. |
 | engine | mlx-whisper | Transcription engine |
 | model | distil-large-v3 | Model variant |
 | language | auto | Language preference |
 | sounds_enabled | true | Audio feedback |
 | min_recording_duration | 0.3 | Minimum recording length (seconds) |
+
+### Supported Hotkeys
+
+`alt_r`, `alt_l`, `ctrl_r`, `ctrl_l`, `cmd_r`, `cmd_l`, `shift_r`, `shift_l`, `f1`-`f12`
+
+Note: The Fn key is not supported (cannot be detected by pynput on macOS).
 
 ## Development
 

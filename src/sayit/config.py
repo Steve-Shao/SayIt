@@ -14,12 +14,25 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 class Config:
     """SayIt configuration."""
     
-    hotkey: str = "fn"
+    hotkey: str = "alt_r"  # Default: Right Option key
     engine: str = "mlx-whisper"
     model: str = "distil-large-v3"
     language: str = "auto"
     sounds_enabled: bool = True
     min_recording_duration: float = 0.3
+    
+    @staticmethod
+    def is_valid_hotkey(key: str) -> bool:
+        """Check if hotkey is supported.
+        
+        Args:
+            key: Hotkey name to validate.
+            
+        Returns:
+            True if hotkey is supported, False otherwise.
+        """
+        from sayit.hotkey import HotkeyListener
+        return HotkeyListener.is_valid_key(key)
     
     @classmethod
     def load(cls) -> "Config":

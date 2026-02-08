@@ -1,12 +1,12 @@
 """SayIt CLI entry point."""
 
-import time
 import click
 from rich.console import Console
 from rich.table import Table
 
 from sayit import __version__
 from sayit.config import Config
+from sayit.core import SayItCore
 from sayit.daemon import Daemon
 from sayit.logging import setup_logging, get_logger
 
@@ -14,13 +14,9 @@ console = Console()
 
 
 def _daemon_main_loop():
-    """Main loop for the daemon process (placeholder)."""
-    logger = get_logger()
-    logger.info("Daemon main loop started")
-    
-    # Placeholder: just sleep until terminated
-    while True:
-        time.sleep(1)
+    """Main loop for the daemon process."""
+    core = SayItCore()
+    core.run()
 
 
 @click.group()
@@ -115,6 +111,8 @@ def config(ctx):
 @click.argument("value")
 def config_set(key: str, value: str):
     """Set a configuration value."""
+    from sayit.hotkey import HotkeyListener
+    
     cfg = Config.load()
     
     # Validate key exists
@@ -122,6 +120,13 @@ def config_set(key: str, value: str):
         console.print(f"[red]✗[/red] Unknown setting: {key}")
         console.print(f"[dim]  Valid settings: hotkey, engine, model, language, sounds_enabled, min_recording_duration[/dim]")
         return
+    
+    # Validate hotkey value
+    if key == "hotkey":
+        if not HotkeyListener.is_valid_key(value):
+            console.print(f"[red]✗[/red] Unsupported hotkey: {value}")
+            console.print(f"[dim]  Supported keys: {', '.join(HotkeyListener.get_supported_keys())}[/dim]")
+            return
     
     # Convert value to appropriate type
     current_value = getattr(cfg, key)

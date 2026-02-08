@@ -2,6 +2,7 @@
 
 import os
 import signal
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -62,11 +63,11 @@ class Daemon:
         self._remove_pid()
         return False, None
     
-    def start(self, run_func: callable) -> bool:
+    def start(self, run_func: callable = None) -> bool:
         """Start the daemon process.
         
         Args:
-            run_func: The main function to run in the daemon.
+            run_func: Ignored. Kept for API compatibility.
         
         Returns:
             True if started successfully, False otherwise.
@@ -76,57 +77,30 @@ class Daemon:
             self.logger.warning(f"Daemon already running (PID: {pid})")
             return False
         
-        # Fork the process
+        # Start daemon as a subprocess using Python -m
         try:
-            pid = os.fork()
-        except OSError as e:
-            self.logger.error(f"Fork failed: {e}")
+            # Use subprocess to avoid fork issues with tkinter on macOS
+            process = subprocess.Popen(
+                [sys.executable, "-m", "sayit.daemon_runner"],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            
+            # Wait for PID file to be created
+            for _ in range(20):  # Wait up to 2 seconds
+                time.sleep(0.1)
+                running, child_pid = self.is_running()
+                if running:
+                    self.logger.info(f"Daemon started (PID: {child_pid})")
+                    return True
+            
+            self.logger.error("Daemon failed to start")
             return False
-        
-        if pid > 0:
-            # Parent process - wait briefly and check if child started
-            time.sleep(0.1)
-            running, child_pid = self.is_running()
-            if running:
-                self.logger.info(f"Daemon started (PID: {child_pid})")
-                return True
-            else:
-                self.logger.error("Daemon failed to start")
-                return False
-        
-        # Child process
-        try:
-            # Create new session
-            os.setsid()
-            
-            # Second fork to prevent zombie processes
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)
-            
-            # Write PID file
-            self._write_pid(os.getpid())
-            
-            # Setup signal handlers
-            signal.signal(signal.SIGTERM, self._signal_handler)
-            signal.signal(signal.SIGINT, self._signal_handler)
-            
-            # Run the main function
-            run_func()
             
         except Exception as e:
-            self.logger.error(f"Daemon error: {e}")
-            self._remove_pid()
-            sys.exit(1)
-        finally:
-            self._remove_pid()
-            sys.exit(0)
-    
-    def _signal_handler(self, signum, frame):
-        """Handle termination signals."""
-        self.logger.info(f"Received signal {signum}, shutting down")
-        self._remove_pid()
-        sys.exit(0)
+            self.logger.error(f"Failed to start daemon: {e}")
+            return False
     
     def stop(self) -> bool:
         """Stop the daemon process.
