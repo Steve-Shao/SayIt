@@ -8,6 +8,7 @@ from typing import Optional
 
 from sayit.config import Config
 from sayit.hotkey import HotkeyListener
+from sayit.indicator import StatusIndicator
 from sayit.logging import get_logger
 from sayit.recorder import AudioRecorder
 from sayit.sounds import SoundPlayer
@@ -36,6 +37,7 @@ class SayItCore:
         self._hotkey: Optional[HotkeyListener] = None
         self._recorder: Optional[AudioRecorder] = None
         self._sounds: Optional[SoundPlayer] = None
+        self._indicator: Optional[StatusIndicator] = None
         
         # Thread-safe event queue
         self._event_queue: queue.Queue = queue.Queue()
@@ -64,6 +66,9 @@ class SayItCore:
         
         # Sound player
         self._sounds = SoundPlayer(enabled=self.config.sounds_enabled)
+        
+        # Status indicator
+        self._indicator = StatusIndicator(self._root)
         
         # Hotkey listener with callbacks
         self._hotkey = HotkeyListener(
@@ -107,12 +112,20 @@ class SayItCore:
         self.logger.info("Recording started")
         self._sounds.play_start()
         self._recorder.start_recording()
+        
+        # Show indicator
+        if self._indicator:
+            self._indicator.show()
     
     def _stop_recording(self) -> None:
         """Stop recording and process audio (runs on main thread)."""
         if self._recorder is None or self._sounds is None:
             self.logger.warning("Recorder or sounds not initialized")
             return
+        
+        # Hide indicator
+        if self._indicator:
+            self._indicator.hide()
         
         audio_path = self._recorder.stop_recording()
         self._sounds.play_stop()
@@ -188,6 +201,10 @@ class SayItCore:
         if self._hotkey:
             self._hotkey.stop()
             self._hotkey = None
+        
+        if self._indicator:
+            self._indicator.destroy()
+            self._indicator = None
         
         if self._root:
             try:
