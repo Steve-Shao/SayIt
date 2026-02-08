@@ -6,8 +6,10 @@ Hold a hotkey to record, release to transcribe locally, text appears at cursor.
 
 ## Features
 
-- System-wide hotkey activation
-- Local transcription (no cloud)
+- System-wide hotkey activation (Right Option by default)
+- Audio recording with sound feedback (start/stop sounds)
+- Visual status indicator (red circle with mic icon)
+- Local transcription (no cloud) - coming in Phase 3
 - Multiple engine support (MLX Whisper, faster-whisper, SenseVoice)
 - Cross-platform (macOS primary, Linux planned)
 
@@ -79,7 +81,7 @@ pytest -v
 ## Project Status
 
 - [x] Phase 1: CLI Shell + Config
-- [ ] Phase 2: Hotkey + Recording + Feedback
+- [x] Phase 2: Hotkey + Recording + Feedback
 - [ ] Phase 3: Transcription + Text Injection
 - [ ] Phase 4: Additional Engines
 - [ ] Phase 5: Cross-Platform Support
