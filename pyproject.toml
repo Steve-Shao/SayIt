@@ -28,6 +28,8 @@ dependencies = [
     "click>=8.0",
     "rich>=13.0",
     "pynput>=1.7",
+    "sounddevice>=0.4",
+    "numpy>=1.26",
 ]
 
 [project.optional-dependencies]
@@ -57,3 +59,8 @@ Repository = "https://github.com/steve-shao/sayit"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "hardware: tests that require actual audio hardware (deselect with '-m \"not hardware\"')",
+]
