@@ -1,28 +1,45 @@
+<!--
+WRITING_PREFERENCES:
+  principles:
+    - Beautiful is better than ugly
+    - Simple is better than complex
+    - Readability counts
+    - Polish relentlessly
+  style:
+    - Clear and precise
+    - Bottom line up front (BLUF)
+    - Plain words, short sentences
+    - Concise and compact
+    - Factual and specific
+    - Active voice
+  format:
+    - Use tables for structured comparisons
+    - Use bullet points sparingly
+    - Prefer prose over lists when explaining ideas
+    - Keep sections short and focused
+-->
+
 # SayIt
 
-Local, privacy-focused voice-to-text for macOS.
+Local voice-to-text for macOS. Hold a key, speak, release—text appears at cursor. No cloud. No subscription.
 
-Hold a hotkey to record, release to transcribe locally, text appears at cursor.
+## Why SayIt
 
-## Features
+Voice is faster than typing. Modern laptops can run speech recognition locally. Your voice data should stay on your machine. SayIt makes this possible: a simple, open-source keyboard replacement that transcribes exactly what you say.
 
-- System-wide hotkey activation (Right Option by default)
-- Local transcription using MLX Whisper (no cloud, no data sent anywhere)
-- Audio recording with sound feedback (start/stop sounds)
-- Visual status indicator (red → orange during transcription)
-- Automatic text injection at cursor position
-- Unicode support (Chinese, Japanese, etc.)
+See [VISION.md](VISION.md) for the full rationale.
 
-## Requirements
-
-- macOS 12+ (Monterey or later)
-- Apple Silicon Mac (M1/M2/M3)
-- Python 3.12+
-- ffmpeg (`brew install ffmpeg`)
+---
 
 ## Installation
 
+**Requirements:** macOS 12+, Apple Silicon, Python 3.12+, ffmpeg
+
 ```bash
+# Install ffmpeg (if not already)
+brew install ffmpeg
+
+# Install SayIt
 pip install sayit
 ```
 
@@ -34,69 +51,54 @@ cd sayit
 pip install -e .
 ```
 
-## Quick Start
-
-```bash
-# Start the daemon
-sayit start
-
-# Hold Right Option key, speak, release
-# Text appears at your cursor!
-
-# Stop when done
-sayit stop
-```
+---
 
 ## Usage
 
 ```bash
-sayit start      # Start background daemon
-sayit stop       # Stop daemon
-sayit status     # Check if running
-sayit config     # View configuration
-sayit config set hotkey cmd_r    # Change hotkey
-sayit config set model mlx-community/whisper-large-v3-turbo
+sayit start    # Start daemon
+sayit stop     # Stop daemon
+sayit status   # Check status
+sayit config   # View/edit settings
 ```
 
-## Configuration
+Hold Right Option (default), speak, release. Text appears at cursor.
 
-Stored in `~/.config/sayit/config.json`.
+### Permissions
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| hotkey | alt_r | Trigger key (Right Option) |
-| engine | mlx-whisper | Transcription engine |
-| model | mlx-community/whisper-large-v3-turbo | Whisper model |
-| language | auto | Language (auto, zh, en, ja) |
-| sounds_enabled | true | Audio feedback |
+Grant in System Settings → Privacy & Security:
 
-### Supported Hotkeys
+| Permission | Purpose |
+|------------|---------|
+| Accessibility | Hotkey detection, text injection |
+| Microphone | Audio recording |
 
-`alt_r`, `alt_l`, `ctrl_r`, `ctrl_l`, `cmd_r`, `cmd_l`, `shift_r`, `shift_l`, `f1`-`f12`
+---
 
-## Permissions
+## Documentation
 
-Grant these in System Settings → Privacy & Security:
+| Document | Purpose |
+|----------|---------|
+| [VISION.md](VISION.md) | Product philosophy and goals |
+| [ROADMAP.md](ROADMAP.md) | Development phases and status |
+| [DEVELOPER.md](DEVELOPER.md) | Architecture, components, technical details |
+| [ISSUES.md](ISSUES.md) | Known bugs and improvements |
 
-- **Accessibility**: Required for hotkey detection and text injection
-- **Microphone**: Required for audio recording
+---
 
-## Development
+## Development Workflow
 
-```bash
-conda create -n sayit python=3.12
-conda activate sayit
-pip install -e ".[dev]"
-pytest -v -m "not hardware"
-```
+SayIt uses a spec-driven development process:
 
-## Project Status
+1. **Plan:** Create a feature spec in `.kiro/specs/` with requirements and tasks
+2. **Build:** Implement the feature following the spec
+3. **Test:** Use daily, document issues in ISSUES.md
+4. **Update:** Merge learnings into project docs, archive the spec
+5. **Repeat:** Move to next phase in ROADMAP.md
 
-- [x] Phase 1: CLI + Config
-- [x] Phase 2: Hotkey + Recording + Feedback
-- [x] Phase 3: Transcription + Text Injection
-- [ ] Phase 4: Additional Engines (faster-whisper, SenseVoice)
-- [ ] Phase 5: Linux Support
+To contribute or extend SayIt, start with [DEVELOPER.md](DEVELOPER.md) for architecture overview, then check [ROADMAP.md](ROADMAP.md) for current priorities.
+
+---
 
 ## License
 
